@@ -4,6 +4,7 @@
 #include <sstream>
 #include <vector>
 #include <cstdlib>
+#include <algorithm>
 
 using namespace std;
 
@@ -18,7 +19,7 @@ struct Pirate{
     char combatAbility[20];
     bool haki;
 
-    int bounty;
+    long int bounty;
 
 };
 struct Marine{
@@ -26,8 +27,6 @@ struct Marine{
     char rank[20];
     char combatAbility[20];
     bool haki;
-
-    int bounty;
 };
 
 struct Revolutionary{
@@ -106,7 +105,6 @@ vector<Marine> loadMarines(){
         ss.getline(marine.combatAbility, 20, ',');
         ss >> marine.haki;
         ss.ignore();
-        ss >> marine.bounty;
         marines.push_back(marine);
     }
     inputFile.close();
@@ -114,7 +112,7 @@ vector<Marine> loadMarines(){
 }
 vector<Revolutionary> loadRevolutionaries(){
     //This loads the revolutionaries from the CSV file
-    ifstream inputFile("revolutionaries.csv");
+    ifstream inputFile("rev.csv");
     if(!inputFile.is_open()){
         cout << "Error opening file" << endl;
         exit(EXIT_FAILURE);
@@ -135,17 +133,274 @@ vector<Revolutionary> loadRevolutionaries(){
     inputFile.close();
     return revolutionaries;
 }
-void DatabaseSystem(){
+DBSystem DatabaseSystem();
+
+void PirateDB(DBSystem db){
+    cout << "Welcome to the Pirate Database\n\n" << endl;
+    cout << "What would you like to do?\n" << endl;
+    cout << "1. View Pirates by Crew\n" << endl;
+    cout << "2. View Pirates by Name\n" << endl;
+    cout << "3. View Pirates Bounties\n" << endl;
+    cout << "4. Return to the World Database\n" << endl;
+
+    int choice;
+    cin >> choice;
+    //Switch statement to allow the user to choose what they want to do
+    switch(choice) {
+        case 1: {
+            cout << "Which crew would you like to view?\n" << endl;
+            //Here we are creating a vector of strings to store the names of the crews
+            vector<string> CrewNames;
+            for (int i = 0; i < db.pirates.size(); i++) {
+                if (db.pirates[i].crew != db.pirates[i + 1].crew) {
+                    CrewNames.push_back(db.pirates[i].crew);
+                }
+            }
+            //Here we are sorting the vector and removing duplicates, crews display once
+            sort(CrewNames.begin(), CrewNames.end());
+            auto last = unique(CrewNames.begin(), CrewNames.end());
+            CrewNames.erase(last, CrewNames.end());
+            for (int i = 0; i < CrewNames.size(); i++) {
+                cout << i + 1 << ". " << CrewNames[i] << endl;
+            }
+            int crewChoice;
+            cin >> crewChoice;
+            //Here we display all the pirates in the chosen crew
+            cout << "Pirates in " << CrewNames[crewChoice - 1] << " crew: " << endl;
+            //Search through pirates vector and if CrewNames[crewChoice-1] == pirates[i].crew, display pirates[i].name
+            for (int i = 0; i < db.pirates.size(); i++) {
+                if (CrewNames[crewChoice - 1] == db.pirates[i].crew) {
+                    cout << db.pirates[i].name << endl;
+                }
+            }
+            PirateDB(db);
+            break;
+        }
+        case 2:
+        {
+            cout << "Which pirate would you like to view?\n" << endl;
+            //Here we display all the pirates in the pirates vector as options
+            for (int i = 0; i < db.pirates.size(); i++) {
+                cout << i + 1 << ". " << db.pirates[i].name << endl;
+            }
+            int pirateChoice;
+            cin >> pirateChoice;
+            //Here we display the chosen pirate's information
+            cout << "Name: " << db.pirates[pirateChoice - 1].name << endl;
+            cout << "Crew: " << db.pirates[pirateChoice - 1].crew << endl;
+            cout << "Combat Ability: " << db.pirates[pirateChoice - 1].combatAbility << endl;
+            //strcmp compares to see if pirate has haki
+            if(db.pirates[pirateChoice-1].haki == true){
+                cout <<db.pirates[pirateChoice-1].name <<" has mastered Haki." << endl;
+            }
+            else{
+                cout << db.pirates[pirateChoice-1].name << " has not mastered Haki." << endl;
+            }
+            cout << "Bounty: " << db.pirates[pirateChoice - 1].bounty <<"\n\n"<< endl;
+            PirateDB(db);
+            break;
+        }
+        case 3:
+        {
+            cout << "Which pirate's bounty would you like to view?\n" << endl;
+
+            vector<int> pirateBounties;
+            for (int i = 0; i < db.pirates.size(); i++) {
+                pirateBounties.push_back(db.pirates[i].bounty);
+            }
+            vector<string> pirateNames;
+            for (int i = 0; i < db.pirates.size(); i++) {
+                pirateNames.push_back(db.pirates[i].name);
+            }
+
+            //Here we create a vector of pairs to store the pirate's name and bounty
+            vector<pair<int, string>> pairs;
+            for(size_t i = 0; i < pirateBounties.size(); i++){
+                pairs.push_back(make_pair(pirateBounties[i], pirateNames[i]));
+            }
+
+            // Sort the vector of pairs based on values in pirateBounties
+            sort(pairs.rbegin(), pairs.rend(),[](const auto& lhs, const auto& rhs){
+                return lhs.first < rhs.first;
+            });
+
+            //Update PirateBounties and pirateNames on the basis of sorted pairs
+            for(size_t i = 0; i < pairs.size(); i++){
+                pirateBounties[i] = pairs[i].first;
+                pirateNames[i] = pairs[i].second;
+            }
+
+            //Here we display (numerically chronologically) the pirates and their bounties
+            for (int i = 0; i < db.pirates.size(); i++) {
+                cout << i + 1 << ". " << pirateNames[i] << " - " << pirateBounties[i] << endl;
+            }
+            PirateDB(db);
+            break;
+        }
+        case 4:
+        {
+            DatabaseSystem();
+            break;
+        }
+    }
+
+}
+void marineDB(DBSystem db){
+    cout << "Welcome to the Marine Database\n\n" << endl;
+    cout << "What would you like to do?\n" << endl;
+    cout << "1. View Marines by Rank\n" << endl;
+    cout << "2. View Marines by Name\n" << endl;
+    cout << "3. Return to the World Database\n" << endl;
+
+    int choice;
+    cin >> choice;
+
+    switch (choice) {
+        case 1:
+        {
+            cout << "Which rank would you like to view?\n" << endl;
+            //We need to create a vector of strings to store the ranks of the marines
+            vector<string> MarineRanks;
+            for (int i = 0; i < db.marines.size(); i++) {
+                if (db.marines[i].rank != db.marines[i + 1].rank) {
+                    MarineRanks.push_back(db.marines[i].rank);
+                }
+            }
+
+            //Now we sort the vector and remove duplicates, ranks display once
+            sort(MarineRanks.begin(), MarineRanks.end());
+            auto last = unique(MarineRanks.begin(), MarineRanks.end());
+            MarineRanks.erase(last, MarineRanks.end());
+            //Display the ranks
+            for(int i = 0; i < MarineRanks.size(); i++){
+                cout << i+1 << ". " << MarineRanks[i] << endl;
+            }
+
+            int rankChoice;
+            cin >> rankChoice;
+            //Here we display all the marines in the chosen rank
+            cout << "Marines in " << MarineRanks[rankChoice - 1] << " rank: " << endl;
+            //Search through marines vector and if MarineRanks[rankChoice-1] == marines[i].rank, display marines[i].name
+            for (int i = 0; i < db.marines.size(); i++) {
+                if (MarineRanks[rankChoice - 1] == db.marines[i].rank) {
+                    cout << db.marines[i].name << endl;
+                }
+            }
+            marineDB(db);
+            break;
+        }
+        case 2:
+        {
+            cout << "Which member of personnel would you like to view?\n" << endl;
+            //Here we display all the marines in the marines vector as options
+            for (int i = 0; i < db.marines.size(); i++) {
+                cout << i + 1 << ". " << db.marines[i].name << endl;
+            }
+            int marineChoice;
+            cin >> marineChoice;
+
+            //Here we display the chosen marine's information
+            cout << "Name: " << db.marines[marineChoice - 1].name << endl;
+            cout << "Rank: " << db.marines[marineChoice - 1].rank << endl;
+            cout << "Combat Ability: " << db.marines[marineChoice - 1].combatAbility << endl;
+            if(db.marines[marineChoice-1].haki == true){
+                cout <<db.marines[marineChoice-1].name <<" has mastered Haki." << endl;
+            }
+            else{
+                cout << db.marines[marineChoice-1].name << " has not mastered Haki." << endl;
+            }
+            marineDB(db);
+            break;
+        }
+        case 3:
+        {
+            DatabaseSystem();
+            break;
+        }
+
+    }
+}
+void revDB(DBSystem db){
+    cout << "Welcome to the Revolutionary Database\n\n" << endl;
+    cout << "WARNING: This database is still under construction\n\n" << endl;
+    cout << "What would you like to do?\n" << endl;
+    cout << "1. View Revolutionaries by Divisional Leadership\n" << endl;
+    cout << "2. View Revolutionaries by Name\n" << endl;
+    cout << "3. Return to the World Database\n" << endl;
+
+    int choice;
+    cin >> choice;
+
+    switch (choice) {
+        case 1:
+        {
+            cout << "Which Leader would you like to view?\n" << endl;
+            //We need to create a vector of strings to store the ranks of the marines
+            vector<string> Leaders;
+            for (int i = 0; i < db.revolutionaries.size(); i++) {
+                if (db.revolutionaries[i].rank != db.revolutionaries[i + 1].rank) {
+                    Leaders.push_back(db.revolutionaries[i].rank);
+                }
+            }
+
+            //Now we sort the vector and remove duplicates, Leadership ranks display once
+            sort(Leaders.begin(), Leaders.end());
+            auto last = unique(Leaders.begin(), Leaders.end());
+            Leaders.erase(last, Leaders.end());
+
+            //Display the ranks
+            for(int i = 0; i < Leaders.size(); i++) {
+                cout << i + 1 << ". " << Leaders[i] << endl;
+            }
+
+            int leaderChoice;
+            cin >> leaderChoice;
+            //Here we display all the revolutionaries in the chosen rank
+            cout << "The most significant Revolutionary in this division is " << db.revolutionaries[leaderChoice - 1].name << endl;
+        }
+
+    }
+
+
+}
+
+DBSystem DatabaseSystem(){
     //This defines the database
     DBSystem db;
     db.pirates = loadPirates();
-    //db.marines = loadMarines();
-    //db.revolutionaries = loadRevolutionaries();
+    db.marines = loadMarines();
+    db.revolutionaries = loadRevolutionaries();
 
-    for (int i = 0; i < db.pirates.size(); i++) {
-        cout <<"NAME:"<< db.pirates[i].name <<"\n"<<"BOUNTY:"<<db.pirates[i].bounty << endl;
+    cout << "Welcome to the World Database\n\n" << endl;
+    cout << "What would you like to do?\n" << endl;
+    cout << "1. View Pirates\n" << endl;
+    cout << "2. View Marines\n" << endl;
+    cout << "3. View Revolutionaries\n" << endl;
+
+    int choice;
+    cin >> choice;
+
+    switch (choice) {
+        case 1:
+        {
+            PirateDB(db);
+            break;
+        }
+        case 2:
+        {
+            marineDB(db);
+            break;
+        }
+        case 3:
+        {
+            revDB(db);
+            break;
+        }
+
     }
+
 }
+
 
 void ExistingLogin() {
     // Allows input, checks if the input is valid, and then checks if the input is in the database
