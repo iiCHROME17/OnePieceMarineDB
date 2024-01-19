@@ -1,6 +1,7 @@
 #include <iostream>
 #include <fstream>
 #include <cstring>
+#include <cstdint>
 #include <sstream>
 #include <vector>
 #include <cstdlib>
@@ -19,7 +20,8 @@ struct Pirate{
     char combatAbility[20];
     bool haki;
 
-    long int bounty;
+    float  bounty;
+    string bountyMagnitude;
 
 };
 struct Marine{
@@ -35,9 +37,11 @@ struct Revolutionary{
     char combatAbility[20];
     bool haki;
 
-    int bounty;
+    float bounty;
+    string bountyMagnitude;
 };
 struct DBSystem{
+    string CurrentUserName;
     vector<Pirate> pirates;
     vector<Marine> marines;
     vector<Revolutionary> revolutionaries;
@@ -83,6 +87,8 @@ vector<Pirate> loadPirates() {
         ss >> pirate.haki;
         ss.ignore();
         ss >> pirate.bounty;
+        ss.ignore();
+        ss >> pirate.bountyMagnitude;
         pirates.push_back(pirate);
     }
     inputFile.close();
@@ -128,6 +134,8 @@ vector<Revolutionary> loadRevolutionaries(){
         ss >> revolutionary.haki;
         ss.ignore();
         ss >> revolutionary.bounty;
+        ss.ignore();
+        ss >> revolutionary.bountyMagnitude;
         revolutionaries.push_back(revolutionary);
     }
     inputFile.close();
@@ -196,43 +204,43 @@ void PirateDB(DBSystem db){
             else{
                 cout << db.pirates[pirateChoice-1].name << " has not mastered Haki." << endl;
             }
-            cout << "Bounty: " << db.pirates[pirateChoice - 1].bounty <<"\n\n"<< endl;
+            cout << "Bounty: " << db.pirates[pirateChoice - 1].bounty << db.pirates[pirateChoice - 1].bountyMagnitude<<"\n\n"<< endl;
             PirateDB(db);
             break;
         }
         case 3:
         {
-            cout << "Which pirate's bounty would you like to view?\n" << endl;
-
-            vector<int> pirateBounties;
+            cout << "Current Highest Unclaimed Bounties:\n" << endl;
+            // We need to create a vector to store the indexes of the pirates
+            vector<int> PirateIndexes;
             for (int i = 0; i < db.pirates.size(); i++) {
-                pirateBounties.push_back(db.pirates[i].bounty);
+                PirateIndexes.push_back(i);
             }
-            vector<string> pirateNames;
-            for (int i = 0; i < db.pirates.size(); i++) {
-                pirateNames.push_back(db.pirates[i].name);
-            }
+            //Now we need to rearrange the indexes so that the pirates are in order of their bounties
+            //But first, we primarily sort the pirates by their bounty magnitude, then by their bounty
+            //Billions, then millions, then thousands
 
-            //Here we create a vector of pairs to store the pirate's name and bounty
-            vector<pair<int, string>> pairs;
-            for(size_t i = 0; i < pirateBounties.size(); i++){
-                pairs.push_back(make_pair(pirateBounties[i], pirateNames[i]));
-            }
-
-            // Sort the vector of pairs based on values in pirateBounties
-            sort(pairs.rbegin(), pairs.rend(),[](const auto& lhs, const auto& rhs){
-                return lhs.first < rhs.first;
+            sort(PirateIndexes.begin(), PirateIndexes.end(), [&db](int i1, int i2) {
+                if (db.pirates[i1].bountyMagnitude == "Billion" && db.pirates[i2].bountyMagnitude == "Million") {
+                    return true;
+                }
+                else if (db.pirates[i1].bountyMagnitude == "Billion" && db.pirates[i2].bountyMagnitude == "Thousand") {
+                    return true;
+                }
+                else if (db.pirates[i1].bountyMagnitude == "Million" && db.pirates[i2].bountyMagnitude == "Thousand") {
+                    return true;
+                }
+                else if (db.pirates[i1].bountyMagnitude == db.pirates[i2].bountyMagnitude) {
+                    return db.pirates[i1].bounty > db.pirates[i2].bounty;
+                }
+                else {
+                    return false;
+                }
             });
-
-            //Update PirateBounties and pirateNames on the basis of sorted pairs
-            for(size_t i = 0; i < pairs.size(); i++){
-                pirateBounties[i] = pairs[i].first;
-                pirateNames[i] = pairs[i].second;
-            }
-
-            //Here we display (numerically chronologically) the pirates and their bounties
-            for (int i = 0; i < db.pirates.size(); i++) {
-                cout << i + 1 << ". " << pirateNames[i] << " - " << pirateBounties[i] << endl;
+            //Now we display the pirates in order of their bounties
+            for (int i = 0; i < PirateIndexes.size(); i++) {
+                cout << i + 1 << ". " << db.pirates[PirateIndexes[i]].name << ": $" << db.pirates[PirateIndexes[i]].bounty
+                << db.pirates[PirateIndexes[i]].bountyMagnitude << endl;
             }
             PirateDB(db);
             break;
@@ -326,7 +334,8 @@ void revDB(DBSystem db){
     cout << "What would you like to do?\n" << endl;
     cout << "1. View Revolutionaries by Divisional Leadership\n" << endl;
     cout << "2. View Revolutionaries by Name\n" << endl;
-    cout << "3. Return to the World Database\n" << endl;
+    cout << "3. View Revolutionaries Bounties\n" << endl;
+    cout << "4. Return to the World Database\n" << endl;
 
     int choice;
     cin >> choice;
@@ -357,6 +366,67 @@ void revDB(DBSystem db){
             cin >> leaderChoice;
             //Here we display all the revolutionaries in the chosen rank
             cout << "The most significant Revolutionary in this division is " << db.revolutionaries[leaderChoice - 1].name << endl;
+        }
+        case 2:
+        {
+            cout << "Which revolutionary would you like to view?\n" << endl;
+            //Here we display all the revolutionaries in the revolutionaries vector as options
+            for (int i = 0; i < db.revolutionaries.size(); i++) {
+                cout << i + 1 << ". " << db.revolutionaries[i].name << endl;
+            }
+            int revChoice;
+            cin >> revChoice;
+
+            //Here we display the chosen revolutionary's information
+            cout << "Name: " << db.revolutionaries[revChoice - 1].name << endl;
+            cout << "Rank: " << db.revolutionaries[revChoice - 1].rank << endl;
+            cout << "Combat Ability: " << db.revolutionaries[revChoice - 1].combatAbility << endl;
+            if(db.revolutionaries[revChoice-1].haki == true){
+                cout <<db.revolutionaries[revChoice-1].name <<" has mastered Haki." << endl;
+            }
+            else{
+                cout << db.revolutionaries[revChoice-1].name << " has not mastered Haki." << endl;
+            }
+            cout << "Bounty: " << db.revolutionaries[revChoice - 1].bounty << db.revolutionaries[revChoice - 1].bountyMagnitude<<"\n\n"<< endl;
+            revDB(db);
+            break;
+        }
+        case 3:
+        {
+            cout << "Current Highest Unclaimed Bounties (Revolutionaries):\n" << endl;
+            // We need to create a vector to store the indexes of the revolutionaries
+            vector<int> RevolutionaryIndexes;
+            for (int i = 0; i < db.revolutionaries.size(); i++) {
+                RevolutionaryIndexes.push_back(i);
+            }
+            //Now we need to rearrange the indexes so that the revolutionaries are in order of their bounties
+            //But first, we primarily sort the revolutionaries by their bounty magnitude, then by their bounty
+            //Billions, then millions, then thousands
+
+            sort(RevolutionaryIndexes.begin(), RevolutionaryIndexes.end(), [&db](int i1, int i2) {
+                if (db.revolutionaries[i1].bountyMagnitude == "Billion" && db.revolutionaries[i2].bountyMagnitude == "Million") {
+                    return true;
+                }
+                else if (db.revolutionaries[i1].bountyMagnitude == "Billion" && db.revolutionaries[i2].bountyMagnitude == "Thousand") {
+                    return true;
+                }
+                else if (db.revolutionaries[i1].bountyMagnitude == "Million" && db.revolutionaries[i2].bountyMagnitude == "Thousand") {
+                    return true;
+                }
+                else if (db.revolutionaries[i1].bountyMagnitude == db.revolutionaries[i2].bountyMagnitude) {
+                    return db.revolutionaries[i1].bounty > db.revolutionaries[i2].bounty;
+                }
+                else {
+                    return false;
+                }
+            });
+            //Now we display the revolutionaries in order of their bounties
+            for (int i = 0; i < RevolutionaryIndexes.size(); i++) {
+                cout << i + 1 << ". " << db.revolutionaries[RevolutionaryIndexes[i]].name << ": $" << db.revolutionaries[RevolutionaryIndexes[i]].bounty
+                     << db.revolutionaries[RevolutionaryIndexes[i]].bountyMagnitude << endl;
+            }
+            revDB(db);
+            break;
         }
 
     }
