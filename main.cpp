@@ -41,7 +41,7 @@ struct Revolutionary{
     string bountyMagnitude;
 };
 struct DBSystem{
-    string CurrentUserName;
+    string currentUserName;
     vector<Pirate> pirates;
     vector<Marine> marines;
     vector<Revolutionary> revolutionaries;
@@ -344,28 +344,33 @@ void revDB(DBSystem db){
         case 1:
         {
             cout << "Which Leader would you like to view?\n" << endl;
-            //We need to create a vector of strings to store the ranks of the marines
-            vector<string> Leaders;
+            //We need to create a vector of strings to store the indexes of the revolutionaries
+            vector<string> RevolutionaryLeaderRoles;
             for (int i = 0; i < db.revolutionaries.size(); i++) {
                 if (db.revolutionaries[i].rank != db.revolutionaries[i + 1].rank) {
-                    Leaders.push_back(db.revolutionaries[i].rank);
+                    RevolutionaryLeaderRoles.push_back(db.revolutionaries[i].rank);
                 }
             }
-
-            //Now we sort the vector and remove duplicates, Leadership ranks display once
-            sort(Leaders.begin(), Leaders.end());
-            auto last = unique(Leaders.begin(), Leaders.end());
-            Leaders.erase(last, Leaders.end());
-
-            //Display the ranks
-            for(int i = 0; i < Leaders.size(); i++) {
-                cout << i + 1 << ". " << Leaders[i] << endl;
+            //Clear Duplicate Roles
+            sort(RevolutionaryLeaderRoles.begin(), RevolutionaryLeaderRoles.end());
+            auto last = unique(RevolutionaryLeaderRoles.begin(), RevolutionaryLeaderRoles.end());
+            RevolutionaryLeaderRoles.erase(last, RevolutionaryLeaderRoles.end());
+            //Display the Revolutionary Leader Roles
+            for(int i = 0; i < RevolutionaryLeaderRoles.size(); i++){
+                cout << i+1 << ". " << RevolutionaryLeaderRoles[i] << endl;
             }
-
-            int leaderChoice;
-            cin >> leaderChoice;
-            //Here we display all the revolutionaries in the chosen rank
-            cout << "The most significant Revolutionary in this division is " << db.revolutionaries[leaderChoice - 1].name << endl;
+            int revChoice;
+            cin >> revChoice;
+            //Here we string compare the chosen revolutionary leader's role to the revolutionaries vector
+            //and display the revolutionaries with the same role
+            cout << "Revolutionaries in " << RevolutionaryLeaderRoles[revChoice - 1] << " role: " << endl;
+            for (int i = 0; i < db.revolutionaries.size(); i++) {
+                if (RevolutionaryLeaderRoles[revChoice - 1] == db.revolutionaries[i].rank) {
+                    cout << db.revolutionaries[i].name << endl;
+                }
+            }
+            revDB(db);
+            break;
         }
         case 2:
         {
@@ -428,6 +433,11 @@ void revDB(DBSystem db){
             revDB(db);
             break;
         }
+        case 4:
+        {
+            DatabaseSystem();
+            break;
+        }
 
     }
 
@@ -440,12 +450,14 @@ DBSystem DatabaseSystem(){
     db.pirates = loadPirates();
     db.marines = loadMarines();
     db.revolutionaries = loadRevolutionaries();
+    db.currentUserName = "Admin";
 
     cout << "Welcome to the World Database\n\n" << endl;
     cout << "What would you like to do?\n" << endl;
     cout << "1. View Pirates\n" << endl;
     cout << "2. View Marines\n" << endl;
     cout << "3. View Revolutionaries\n" << endl;
+    cout << "4. Exit System\n" << endl;
 
     int choice;
     cin >> choice;
@@ -465,6 +477,11 @@ DBSystem DatabaseSystem(){
         {
             revDB(db);
             break;
+        }
+        case 4:
+        {
+            cout << "Thank you for using the World Database"<< db.currentUserName << endl;
+            exit(EXIT_SUCCESS);
         }
 
     }
